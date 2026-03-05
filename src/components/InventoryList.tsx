@@ -1,23 +1,22 @@
 "use client";
 
-import { RefrigeratorItem, CookingSelection } from "@/types/refrigerator";
+import { RefrigeratorItem } from "@/types/refrigerator";
 import { getExpirationStatus } from "@/lib/utils";
+import { useCookingStore } from "@/store/useCookingStore";
 
 interface InventoryListProps {
   items: RefrigeratorItem[];
-  cookingPot: CookingSelection[];
-  toggleInPot: (id: string) => void;
   updateItemAmount: (id: string, amount: string) => void;
   deleteItem: (id: string) => void;
 }
 
 export default function InventoryList({
   items,
-  cookingPot,
-  toggleInPot,
   updateItemAmount,
   deleteItem,
 }: InventoryListProps) {
+  const { cookingPot, toggleInPot } = useCookingStore();
+
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
