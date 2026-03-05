@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import Home from '../app/page'
 import { expect, test, describe, vi, beforeEach } from 'vitest'
 import { supabase } from '@/lib/supabase'
+import { useCookingStore } from '@/store/useCookingStore'
 
 // Mock data
 const mockItems = [
@@ -13,6 +14,14 @@ describe('Super Refrigerator - Core Features', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
+    // Reset Zustand store
+    useCookingStore.getState().clearPot();
+    useCookingStore.getState().setDishCount(1);
+    useCookingStore.getState().setPeopleCount(2);
+    useCookingStore.getState().setGeneratedDishes([]);
+    useCookingStore.getState().setAiError("");
+    useCookingStore.getState().setIsGenerating(false);
+
     // Default Supabase mock response
     (supabase.from as any).mockImplementation((table: string) => ({
       select: vi.fn().mockImplementation(() => ({
@@ -25,6 +34,9 @@ describe('Super Refrigerator - Core Features', () => {
         })
       })),
       update: vi.fn().mockImplementation(() => ({
+        update: vi.fn().mockImplementation(() => ({
+            eq: vi.fn().mockResolvedValue({ error: null })
+        })),
         eq: vi.fn().mockResolvedValue({ error: null })
       })),
       delete: vi.fn().mockImplementation(() => ({
@@ -43,7 +55,7 @@ describe('Super Refrigerator - Core Features', () => {
 
   test('1. Inventory: Initial Load', async () => {
     render(<Home />)
-    expect(await screen.findByText(/Eggs/i)).toBeInTheDocument()
+    expect(await screen.findAllByText(/Eggs/i)).toHaveLength(1) // Initially only in inventory
     expect(screen.getByText(/Milk/i)).toBeInTheDocument()
     // Using getAllByText for '6' because it appears in date too
     expect(screen.getAllByText(/6/i).length).toBeGreaterThan(0)
@@ -74,7 +86,7 @@ describe('Super Refrigerator - Core Features', () => {
 
   test('4. Inventory: Delete Item', async () => {
     render(<Home />)
-    await screen.findByText(/Eggs/i)
+    await screen.findAllByText(/Eggs/i)
     
     // Find delete button via its SVG path or class
     const deleteBtn = screen.getAllByRole('button').find(btn => 
@@ -94,8 +106,9 @@ describe('Super Refrigerator - Core Features', () => {
     
     fireEvent.click(toggleBtns[0])
     
-    const potItems = screen.getAllByText(/Eggs/i)
-    expect(potItems.length).toBeGreaterThan(1)
+    // Now it should appear twice: once in inventory, once in cooking pot
+    const items = await screen.findAllByText(/Eggs/i)
+    expect(items.length).toBe(2)
   })
 
   test('6. Recipe Generation: With Selected Items', async () => {
@@ -111,7 +124,7 @@ describe('Super Refrigerator - Core Features', () => {
 
   test('7. Recipe Generation: 1-Click Feature', async () => {
     render(<Home />)
-    await screen.findByText(/Eggs/i)
+    await screen.findAllByText(/Eggs/i)
     
     const oneClickBtn = await screen.findByText(/一鍵生成食譜 \(全冰箱\)/i)
     fireEvent.click(oneClickBtn)
@@ -125,7 +138,7 @@ describe('Super Refrigerator - Core Features', () => {
     // Find buttons by text/title after they load
     const plusBtns = await screen.findAllByText('+')
     // Next.js page has many buttons, let's be specific
-    // The dish count stepper is in the right column
+    // The dish count stepper is in the right column - using more specific selection
     const dishPlusBtn = screen.getAllByText('+').find(btn => btn.parentElement?.className.includes('bg-gray-50'))
     
     if (dishPlusBtn) fireEvent.click(dishPlusBtn)
