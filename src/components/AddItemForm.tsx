@@ -22,6 +22,7 @@ export default function AddItemForm({ isOpen, onClose, onItemAdded }: AddItemFor
   const [itemAmount, setItemAmount] = useState("");
   const [addedDate, setAddedDate] = useState(getTodayString());
   const [expireDate, setExpireDate] = useState(getTomorrowString());
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const modifyDate = (days: number) => {
     const current = new Date(expireDate);
@@ -32,160 +33,175 @@ export default function AddItemForm({ isOpen, onClose, onItemAdded }: AddItemFor
   const addItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!itemName || !expireDate || !addedDate) return;
+    setIsSubmitting(true);
 
     const { data, error } = await supabase
       .from("refrigerator_items")
-      .insert([
-        { 
-          name: itemName, 
-          amount: itemAmount || null,
-          added_date: addedDate, 
-          expire_date: expireDate 
-        }
-      ])
+      .insert([{ name: itemName, amount: itemAmount || null, added_date: addedDate, expire_date: expireDate }])
       .select();
 
     if (error) {
       console.error("Error adding item:", error);
     } else if (data) {
-      const newItem = {
+      onItemAdded({
         id: data[0].id,
         name: data[0].name,
         amount: data[0].amount,
         addedDate: data[0].added_date,
-        expireDate: data[0].expire_date
-      };
-      onItemAdded(newItem);
+        expireDate: data[0].expire_date,
+      });
       setItemName("");
       setItemAmount("");
       setAddedDate(getTodayString());
       setExpireDate(getTomorrowString());
-      onClose(); // Close modal after successful add
+      onClose();
     }
+    setIsSubmitting(false);
   };
 
   if (!isOpen) return null;
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/60 backdrop-blur-md animate-in fade-in duration-300 overflow-y-auto"
+    /* ── Backdrop ──────────────────────────────────────────────────────── */
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/50 backdrop-blur-md animate-fade-in overflow-y-auto"
       onClick={onClose}
     >
-      <div 
-        className="bg-white rounded-3xl sm:rounded-[2rem] shadow-2xl p-6 sm:p-10 w-full max-w-lg border border-gray-100 animate-in zoom-in-95 duration-300 relative my-auto"
+      {/* ── Modal Card ─────────────────────────────────────────────────── */}
+      <div
+        className="w-full sm:max-w-md glass rounded-t-3xl sm:rounded-3xl border border-white/60 shadow-2xl animate-bottom-sheet sm:animate-slide-up p-6 sm:p-8 relative"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-6 sm:mb-8">
-          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 flex items-center gap-3">
-            <span className="text-3xl sm:text-4xl">🧊</span> 新增食材
-          </h2>
-          <button 
+        {/* Handle (mobile) */}
+        <div className="sm:hidden w-10 h-1 rounded-full bg-gray-200 mx-auto mb-5" />
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-7">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-200/50">
+              <span className="text-xl">🧊</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-gray-900">新增食材</h2>
+              <p className="text-xs text-gray-400 font-medium">加入冰箱庫存</p>
+            </div>
+          </div>
+          <button
+            type="button"
             onClick={onClose}
-            className="p-2 sm:p-3 hover:bg-gray-100 rounded-xl sm:rounded-2xl transition-all text-gray-400 hover:text-gray-600 active:scale-90"
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100/80 transition-all active:scale-90"
           >
-            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <form onSubmit={addItem} className="space-y-6 sm:space-y-8">
-          <div className="space-y-4 sm:space-y-6">
-            {/* Item Name */}
-            <div>
-              <label htmlFor="itemName" className="block text-xs sm:text-sm font-bold text-gray-800 mb-1.5 ml-1">
-                物品名稱
+        {/* Form */}
+        <form onSubmit={addItem} className="space-y-5">
+          {/* Item Name */}
+          <div className="space-y-1.5">
+            <label htmlFor="itemName" className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+              物品名稱 <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              id="itemName"
+              value={itemName}
+              onChange={(e) => setItemName(e.target.value)}
+              placeholder="例如：牛奶、雞蛋..."
+              className="input-field"
+              required
+              autoFocus
+            />
+          </div>
+
+          {/* Amount */}
+          <div className="space-y-1.5">
+            <label htmlFor="itemAmount" className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+              數量 <span className="text-gray-300">(選填)</span>
+            </label>
+            <input
+              type="text"
+              id="itemAmount"
+              value={itemAmount}
+              onChange={(e) => setItemAmount(e.target.value)}
+              placeholder="2 瓶..."
+              className="input-field"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {/* Added Date */}
+            <div className="space-y-1.5">
+              <label htmlFor="addedDate" className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                放入日期
               </label>
               <input
-                type="text"
-                id="itemName"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                placeholder="例如：牛奶、雞蛋..."
-                className="block w-full px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-gray-100 focus:border-blue-500 focus:ring-0 outline-none transition-all text-gray-900 bg-gray-50/50 text-base sm:text-lg placeholder:text-gray-300"
+                type="date"
+                id="addedDate"
+                value={addedDate}
+                onChange={(e) => setAddedDate(e.target.value)}
+                className="input-field text-sm"
                 required
               />
             </div>
 
-            {/* Item Amount */}
-            <div>
-              <label htmlFor="itemAmount" className="block text-xs sm:text-sm font-bold text-gray-800 mb-1.5 ml-1">
-                數量 (選填)
+            {/* Expire Date */}
+            <div className="space-y-1.5">
+              <label htmlFor="expireDate" className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                有效日期
               </label>
-              <input
-                type="text"
-                id="itemAmount"
-                value={itemAmount}
-                onChange={(e) => setItemAmount(e.target.value)}
-                placeholder="2 瓶, 500g..."
-                className="block w-full px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-gray-100 focus:border-blue-500 focus:ring-0 outline-none transition-all text-gray-900 bg-gray-50/50 text-base sm:text-lg placeholder:text-gray-300"
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 gap-4 sm:gap-6">
-              {/* Added Date */}
-              <div>
-                <label htmlFor="addedDate" className="block text-xs sm:text-sm font-bold text-gray-800 mb-1.5 ml-1">
-                  放入日期
-                </label>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => modifyDate(-1)}
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-lg transition-all active:scale-90"
+                  title="減少 1 天"
+                >−</button>
                 <input
                   type="date"
-                  id="addedDate"
-                  value={addedDate}
-                  onChange={(e) => setAddedDate(e.target.value)}
-                  className="block w-full px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-gray-100 focus:border-blue-500 focus:ring-0 outline-none transition-all text-gray-900 bg-gray-50/50 text-base sm:text-lg"
+                  id="expireDate"
+                  value={expireDate}
+                  onChange={(e) => setExpireDate(e.target.value)}
+                  className="input-field text-sm flex-1 min-w-0"
                   required
                 />
-              </div>
-
-              {/* Expire Date */}
-              <div>
-                <label htmlFor="expireDate" className="block text-xs sm:text-sm font-bold text-gray-800 mb-1.5 ml-1">
-                  有效日期
-                </label>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <button
-                    type="button"
-                    onClick={() => modifyDate(-1)}
-                    className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0 flex items-center justify-center rounded-xl sm:rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-all font-black text-xl sm:text-2xl active:scale-90 shadow-sm"
-                    title="減少 1 天"
-                  >
-                    -
-                  </button>
-                  <input
-                    type="date"
-                    id="expireDate"
-                    value={expireDate}
-                    onChange={(e) => setExpireDate(e.target.value)}
-                    className="flex-1 min-w-0 px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-gray-100 focus:border-blue-500 focus:ring-0 outline-none transition-all text-gray-900 bg-gray-50/50 text-base sm:text-lg"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => modifyDate(1)}
-                    className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0 flex items-center justify-center rounded-xl sm:rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-all font-black text-xl sm:text-2xl active:scale-90 shadow-sm"
-                    title="增加 1 天"
-                  >
-                    +
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => modifyDate(1)}
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-lg transition-all active:scale-90"
+                  title="增加 1 天"
+                >+</button>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 sm:pt-4">
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="order-2 sm:order-1 flex-1 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-gray-100 text-gray-500 font-bold hover:bg-gray-50 hover:border-gray-200 transition-all active:scale-95 text-sm sm:text-base"
+              className="flex-1 py-3.5 rounded-2xl border-2 border-gray-200/80 text-gray-500 font-bold hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 text-sm"
             >
               取消
             </button>
             <button
               type="submit"
-              className="order-1 sm:order-2 flex-[1.5] bg-blue-600 hover:bg-blue-700 text-white font-black py-3 sm:py-4 px-6 sm:px-8 rounded-xl sm:rounded-2xl shadow-xl shadow-blue-100 hover:shadow-2xl hover:shadow-blue-200 transform transition-all active:scale-95 flex items-center justify-center gap-2 sm:gap-3 text-base sm:text-lg"
+              disabled={isSubmitting}
+              className="btn-aurora flex-[1.5] py-3.5 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-emerald-300/30"
             >
-              確認加入冰箱
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin-slow w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3.5" strokeOpacity="0.25" />
+                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  加入中...
+                </>
+              ) : (
+                "確認加入冰箱"
+              )}
             </button>
           </div>
         </form>
