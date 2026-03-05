@@ -17,6 +17,7 @@ All new features, bug fixes, and architectural changes **MUST** follow a strict 
 
 ## 🛠 Project Standards
 -   **UI/UX:** Maintain the modern, interactive aesthetic using Tailwind CSS.
+-   **Responsive Web Design (RWD):** The application **MUST** be fully responsive and mobile-friendly. Use Tailwind's responsive modifiers (`sm:`, `md:`, `lg:`, etc.) to ensure a seamless experience across all device sizes (mobile, tablet, and desktop).
 -   **Aesthetics:** Ensure all interactive elements provide visual feedback (e.g., active/hover states, loading animations).
 -   **TypeScript:** Strict typing is required. Avoid `any` unless absolutely necessary for external library compatibility.
 -   **Supabase:** All database operations must be performed through the Supabase client in `src/lib/supabase.ts`.
