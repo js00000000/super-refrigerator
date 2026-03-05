@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { items, dishCount } = await req.json();
+    const { items, dishCount, peopleCount, isAllItems } = await req.json();
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: "No items selected." }, { status: 400 });
@@ -20,9 +20,11 @@ export async function POST(req: Request) {
 
     const prompt = `
       你是一位大廚。我冰箱裡有以下食材：
-      ${items.map((i: any) => `- ${i.name} (過期日：${i.expireDate})`).join("\n")}
+      ${items.map((i: any) => `- ${i.name} ${i.amount ? `(${i.amount})` : ""} (過期日：${i.expireDate})`).join("\n")}
 
-      請根據這些食材提供 ${dishCount} 道我可以製作的菜餚。
+      ${isAllItems ? "請優先考慮快過期的食材，並盡可能靈活地組合這些食材。" : "請專注於使用我選中的這些食材。"}
+      
+      請根據這些食材提供 ${dishCount} 道供 ${peopleCount} 人食用的菜餚。
       每道菜請提供：
       1. 菜名。
       2. 逐步的烹飪指令。
