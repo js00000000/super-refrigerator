@@ -64,9 +64,13 @@ describe('Super Refrigerator - Core Features', () => {
   test('2. Inventory: Add New Item', async () => {
     render(<Home />)
     
+    // Open modal first
+    const addBtn = await screen.findByText(/新增食材/i)
+    fireEvent.click(addBtn)
+    
     const nameInput = await screen.findByPlaceholderText(/例如：牛奶、雞蛋\.\.\./i)
-    const amountInput = screen.getByPlaceholderText(/2 瓶, 500g\.\.\./i)
-    const submitBtn = screen.getByText(/加入冰箱/i)
+    const amountInput = screen.getByPlaceholderText(/2 瓶\.\.\./i)
+    const submitBtn = screen.getByText(/確認加入/i)
 
     fireEvent.change(nameInput, { target: { value: 'Cheese' } })
     fireEvent.change(amountInput, { target: { value: '200g' } })
