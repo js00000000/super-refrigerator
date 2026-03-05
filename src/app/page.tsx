@@ -227,7 +227,7 @@ export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [showHero, setShowHero] = useState(true);
-  const { generatedDishes, cookingPot, removeFromPot } = useCookingStore();
+  const { generatedDishes, cookingPot, removeFromPot, clearGeneratedDishes } = useCookingStore();
 
   /* Load items from Supabase */
   useEffect(() => {
@@ -351,6 +351,15 @@ export default function Home() {
               <span className="ml-auto text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
                 {generatedDishes.length} 道料理
               </span>
+              <button
+                onClick={clearGeneratedDishes}
+                title="關閉食譜"
+                className="ml-2 w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all active:scale-90"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {generatedDishes.map((dish, idx) => (
